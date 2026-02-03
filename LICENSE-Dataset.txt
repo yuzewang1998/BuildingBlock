@@ -1,0 +1,44 @@
+Tencent is pleased to support the community by making BuildingBlock available.
+
+Copyright (C)  2025 Tencent.  All rights reserved. 
+
+The dataset included in this distribution may have been modified by Tencent (“Tencent Modifications”). All Tencent Modifications are Copyright (C) Tencent.
+
+BuildingBlock is licensed under License Term of BuildingBlock, except for the third-party components listed below, which remain licensed under their respective original terms. BuildingBlock does not impose any additional restrictions beyond those specified in the original licenses of these third-party components. Users are required to comply with all applicable terms and conditions of the original licenses and to ensure that the use of these third-party components conforms to all relevant laws and regulations.
+
+For the avoidance of doubt, BuildingBlock refers solely to the dataset made publicly available by Tencent in accordance with License Term of BuildingBlock. 
+
+Terms of License Term of BuildingBlock:
+--------------------------------------------------------------------
+Permission is hereby granted, free of charge, to any person obtaining a copy of this dataset and associated documentation files (the "Dataset"), to deal in the Dataset without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, and /or sublicense copies of the Dataset, and to permit persons to whom the Dataset is furnished to do so, subject to the following conditions:
+
+- You agree to use the BuildingBlock only for research and educational purposes, and refrain from using it for any commercial or production purposes under any circumstances.
+
+- The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Dataset.
+
+THE DATASET IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE DATASET OR THE USE OR OTHER DEALINGS IN THE DATASET.
+
+
+
+Dependencies and Licenses:
+
+This project, BuildingBlock, builds upon the following datasets, each of which remains licensed under its original license. 
+
+In case you believe there have been errors in the attribution below, you may submit the concerns to us for review and correction.
+
+Open Dataset licensed under the BuildingNet - Terms & Conditions:
+--------------------------------------------------------------------
+1. BuildingNet
+Copyright (c) BuildingNet original author and authors
+
+Terms of the BuildingNet - Terms & Conditions:
+--------------------------------------------------------------------
+BuildingNet - Terms & Conditions
+By submitting this form, you (the "Researcher") will receive permission to use the BuildingNet dataset (the "Database"). In exchange for being able to receive such permission, Researcher hereby agrees to the following terms and conditions:
+1.Researcher shall use the Database only for non-commercial research and educational purposes.
+2.The authors of the BuildingNet dataset identified in the ICCV 2021 paper "BuildingNet: Learning to Label 3D Buildings" (the "Authors") make no representations or warranties regarding the Database, including but not limited to warranties of non-infringement or fitness for a particular purpose.
+3.Researcher accepts full responsibility for his or her use of the Database and shall defend and indemnify the Authors against any and all claims arising from Researcher's use of the Database, including but not limited to Researcher's use of any copies of copyrighted 3D models that he or she may create from the Database.
+4.Researcher may provide research associates and colleagues with access to the Database provided that they first agree to be bound by these terms and conditions.
+The Authors reserve the right to terminate access to the Database at any time.
+5.If Researcher is employed by a for-profit, commercial entity, Researcher's employer shall also be bound by these terms and conditions, and Researcher hereby represents that he or she is fully authorized to enter into this agreement on behalf of such employer.
+6.The law of Massachusetts shall apply to all disputes under this agreement.
