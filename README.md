@@ -34,9 +34,10 @@ bash initialization.sh
 
 ## Dataset Preparation
 
-### 1. Extract Dataset
-
-Extract the `BoxCenterSizeLabel_all` directory from the archive file:
+### 1. Dataset Download and Extraction
+Download the dataset from  
+👉 https://huggingface.co/datasets/dreaming-huang/buildingblock/blob/main/building_block_data_opensource_only_layout_and_cond.zip
+Extract the `BoxCenterSizeLabel_all` directory from the building_block_data_opensource_only_layout_and_cond.zip:
 ```bash
 unzip building_block_data_opensource_only_layout_and_cond.zip
 ```
