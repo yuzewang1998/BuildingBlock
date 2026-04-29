@@ -909,7 +909,7 @@ class Add_Text_Building(DatasetDecoratorBase):
     def add_description(self, sample):
         # import ipdb;ipdb.set_trace()
         texts = sample["texts"]
-        sentences = random.choice(texts)
+        sentences = random.choice(texts) if texts else ""
         del sample["texts"]
         sample["description"] = sentences
         return sample

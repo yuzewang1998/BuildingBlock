@@ -1,0 +1,14 @@
+[
+  {
+    "actor_label": "Cube0",
+    "materials": ["wallMaterial"],
+    "actor_size": [1.0, 0.2, 2.0],
+    "actor_location": [0.0, 0.0, 1.0]
+  },
+  {
+    "actor_label": "Cube1",
+    "materials": ["roofMaterial"],
+    "actor_size": [1.2, 1.0, 0.3],
+    "actor_location": [0.0, 0.0, 2.2]
+  }
+]

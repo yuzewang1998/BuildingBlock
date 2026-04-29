@@ -359,19 +359,21 @@ class CachedBuildingBlocks(BuildingBlocks):
             txt_list = [cond for cond in cond_list if cond.endswith(txt_suffix)]
 
             for txt in txt_list:
-                try:
-                    with open(os.path.join(self._path_of_condition[i], txt), "r") as f:
-                        describe = f.read()
-                        if cut_text:
-                            describe = describe.split(".")
-                            sentences = np.random.randint(
-                                1, 4 if len(describe) > 4 else len(describe)
-                            )
-                            describe = describe[:sentences]
-                            describe = ".".join(describe)
-                        texts.append(describe)
-                except:
+                describe = self._read_condition_text(
+                    os.path.join(self._path_of_condition[i], txt)
+                )
+                if not describe:
                     continue
+                if cut_text:
+                    describe = describe.split(".")
+                    sentences = np.random.randint(
+                        1, 4 if len(describe) > 4 else len(describe)
+                    )
+                    describe = describe[:sentences]
+                    describe = ".".join(describe)
+                describe = describe.strip()
+                if describe:
+                    texts.append(describe)
 
         data_dict = {
             # "room_layout": room,
@@ -388,6 +390,18 @@ class CachedBuildingBlocks(BuildingBlocks):
         #     data_dict[ "objfeats_32" ] = D["objfeats_32"]
 
         return data_dict
+
+    @staticmethod
+    def _read_condition_text(path):
+        for encoding in ("utf-8", "utf-8-sig", "latin1"):
+            try:
+                with open(path, "r", encoding=encoding) as f:
+                    return f.read()
+            except UnicodeDecodeError:
+                continue
+            except OSError:
+                return None
+        return None
 
     def __len__(self):
         return len(self._path_to_rooms)

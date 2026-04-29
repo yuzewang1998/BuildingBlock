@@ -103,7 +103,7 @@ training:
     epochs: 100000
     steps_per_epoch: 500
     batch_size: 64
-    save_frequency: 1000
+    save_frequency: 500
     max_grad_norm: 10
     # optimizer
     optimizer: Adam
