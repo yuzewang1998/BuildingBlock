@@ -84,6 +84,55 @@ cat command.sh
 python train_diffusion_building_DDP.py ../config/text/diffusion_building_DIT.yaml uncond  --experiment_tag uncond --n_processes 0 --with_swanlab_logger
 ```
 
+
+## Stage2 / Stage2 with Agentic
+
+This repository now contains an experimental **Stage2 with Agentic** track.  It is
+Stage2 code: it starts from the Stage1 part-level layout with detailed part text,
+then runs/inspects the Stage2 pipeline:
+
+```text
+Stage1 layout + part descriptions
+  -> T2I part reference images
+  -> I23D / Hunyuan3D-Omni part meshes
+  -> Assemble part meshes into the full building
+  -> Texture generation
+```
+
+The agentic layer does not replace the Stage2 pipeline.  It adds focused VLM
+review, repair routing, iteration traces, and 9999 visualization around Stage2.
+For the full restart notes, current progress, known issues, and future plan, see:
+[`BuildingBlock/docs/stage2_with_agentic_readme.md`](BuildingBlock/docs/stage2_with_agentic_readme.md)
+when reading from the repository root, or
+[`docs/stage2_with_agentic_readme.md`](docs/stage2_with_agentic_readme.md)
+inside the `BuildingBlock/` package directory.
+
+### Stage2 code map
+
+| Path | Purpose |
+| --- | --- |
+| `BuildingBlock/scene_synthesis/building_mesh/` | Core Stage2 layout-to-mesh, mesh assembly, visualization, reporting, and agent logic. |
+| `BuildingBlock/scene_synthesis/building_mesh/layout_io.py` | Loads/parses Stage1 part-level layout records and geometry contracts. |
+| `BuildingBlock/scene_synthesis/building_mesh/prompting.py` | Builds Stage2 prompts from part descriptions, bbox/layout context, and repair hints. |
+| `BuildingBlock/scene_synthesis/building_mesh/reference_images.py` | T2I reference-image providers, including local Qwen-Image support and metadata writing. |
+| `BuildingBlock/scene_synthesis/building_mesh/assembly.py` | Normalizes generated part meshes to layout bboxes and assembles the full building mesh. |
+| `BuildingBlock/scene_synthesis/building_mesh/visualization.py` | S1-style layout multiview rendering, true mesh six-view rendering, and report assets. |
+| `BuildingBlock/scene_synthesis/building_mesh/quality_agent.py` | Focused VLM critic inputs/outputs for part-image, part-mesh, and assembled-scene checks. |
+| `BuildingBlock/scene_synthesis/building_mesh/s2_repair_agent.py` | Agent repair planning/execution: T2I prompt repair, geometry reruns, assemble-local fixes, iteration state. |
+| `BuildingBlock/scene_synthesis/building_mesh/s2_agent_trace.py` | Trace schema/helpers for recording Agent steps, VLM calls, actions, and artifacts. |
+| `BuildingBlock/scene_synthesis/building_mesh/report_bundle.py` | 9999 report generation/refresh, including Focused Visual Critic QA and Agent action cards. |
+| `BuildingBlock/scripts/run_open_semantic_s2_batch.py` | Runs the open-semantic Stage2 batch pipeline. |
+| `BuildingBlock/scripts/generate_part_reference_images.py` | Generates Stage2 part-level T2I reference images. |
+| `BuildingBlock/scripts/hunyuan_bbox_single.py` | Runs single-part Hunyuan bbox-conditioned I23D generation. |
+| `BuildingBlock/scripts/run_archstudio_s2_agent_loop.py` | Main Stage2 Agent loop entry point for real runs. |
+| `BuildingBlock/scripts/run_archstudio_s2_focused_critics.py` | Runs focused VLM critics separately for debugging/evaluation. |
+| `BuildingBlock/scripts/evaluate_archstudio_s2_quality.py` | Quality evaluation helper for Stage2 outputs. |
+| `BuildingBlock/scripts/repair_archstudio_s2_parts.py` | Repair helper for selected Stage2 parts. |
+| `BuildingBlock/scripts/rebuild_archstudio_s2_assemblies_from_manifest.py` | Rebuilds assembled meshes from manifests after part edits/repairs. |
+| `BuildingBlock/scripts/texture_archstudio_s2_hunyuan_paint.py` | Texture-generation stage helper. |
+| `BuildingBlock/scripts/tests/test_archstudio_s2_quality_agent.py` | Regression tests for focused critic / quality-agent behavior. |
+| `BuildingBlock/scripts/tests/test_archstudio_s2_repair_agent.py` | Regression tests for Stage2 repair-agent behavior. |
+
 ## Project Structure
 
 - `1-json_rotate_augment.py`: Data augmentation script
