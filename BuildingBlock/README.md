@@ -27,6 +27,14 @@ cp dataset_stats.txt ./BoxCenterSizeLabelNp
 
 Training and generation entry points live under `scripts/`.
 
+
+## Stage2 with Agentic
+
+The current experimental Stage2 agent layer is documented in
+[`docs/stage2_with_agentic_readme.md`](docs/stage2_with_agentic_readme.md).
+It records the S1-layout-to-S2 pipeline boundary, focused VLM critic loops,
+9999 visualization/debug workflow, known blockers, and restart checklist.
+
 ## Layout to Mesh V1
 
 After generating a BuildingBlock layout JSON, prepare a Hunyuan3D-Omni mesh run:

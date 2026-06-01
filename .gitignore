@@ -1,3 +1,18 @@
 *.ckpt
 *.7z
 *.zip
+.omx/
+.DS_Store
+__pycache__/
+*.py[cod]
+# Local datasets and generated artifacts
+BuildingBlock/BoxCenterSizeLabel*/
+BuildingBlock/outputs/
+BuildingBlock/uncond/
+BuildingBlock/scripts/uncond/
+BuildingBlock/scripts/core.*
+BuildingBlock/.codex/
+AGENTS.md
+BuildingBlock/AGENTS.md
+*.egg-info/
+.pytest_cache/

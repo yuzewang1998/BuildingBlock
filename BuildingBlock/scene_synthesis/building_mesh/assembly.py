@@ -107,6 +107,27 @@ def create_box_mesh(center: Sequence[float], size: Sequence[float]) -> MeshData:
     return MeshData(vertices=vertices, faces=faces)
 
 
+def shrink_wall_placeholder_size(
+    size: Sequence[float],
+    xy_scale: float = 0.92,
+    z_scale: float = 0.94,
+    min_thickness: float = 0.002,
+) -> Vector3:
+    """Return a slightly smaller wall placeholder size.
+
+    Wall placeholders are only a temporary coarse building body.  Using the
+    exact layout bbox creates a solid block that covers generated windows and
+    doors in the assembled view.  A small center-preserving shrink keeps the
+    wall visible while leaving generated parts proud of the surface.
+    """
+    sx, sy, sz = (float(value) for value in size)
+    return (
+        max(sx * float(xy_scale), min_thickness),
+        max(sy * float(xy_scale), min_thickness),
+        max(sz * float(z_scale), min_thickness),
+    )
+
+
 def read_obj_mesh(path: Union[str, Path]) -> MeshData:
     vertices = []
     faces = []
@@ -148,6 +169,112 @@ def mesh_bounds(mesh: MeshData) -> Tuple[Vector3, Vector3]:
     return (min(xs), min(ys), min(zs)), (max(xs), max(ys), max(zs))
 
 
+def cleanup_mesh_to_bbox(
+    mesh: MeshData,
+    center: Sequence[float],
+    size: Sequence[float],
+    *,
+    tolerance_fraction: float = 0.08,
+    minimum_component_face_fraction: float = 0.002,
+) -> Tuple[MeshData, Dict[str, object]]:
+    """Apply generic post-normalization cleanup inside a loose layout bbox.
+
+    This is intentionally model- and class-agnostic.  It removes tiny
+    disconnected floaters and drops faces whose vertices are far outside a
+    slightly padded target bbox.  The final mesh is renormalized by the caller,
+    so this cleanup should reduce obvious pipeline artifacts without enforcing
+    semantic class rules.
+    """
+    target_center = [float(value) for value in center]
+    target_size = [float(value) for value in size]
+    if not mesh.vertices or not mesh.faces:
+        return mesh, {
+            "cleanup_enabled": True,
+            "removed_vertices": 0,
+            "removed_faces": 0,
+            "components_before": 0,
+            "components_kept": 0,
+            "outlier_faces_removed": 0,
+        }
+
+    min_allowed = [target_center[i] - target_size[i] * (0.5 + tolerance_fraction) for i in range(3)]
+    max_allowed = [target_center[i] + target_size[i] * (0.5 + tolerance_fraction) for i in range(3)]
+
+    inlier_faces: List[Tuple[int, ...]] = []
+    outlier_faces_removed = 0
+    for face in mesh.faces:
+        points = [mesh.vertices[index - 1] for index in face if 1 <= index <= len(mesh.vertices)]
+        if len(points) != len(face):
+            outlier_faces_removed += 1
+            continue
+        if all(
+            min_allowed[axis] <= point[axis] <= max_allowed[axis]
+            for point in points
+            for axis in range(3)
+        ):
+            inlier_faces.append(face)
+        else:
+            outlier_faces_removed += 1
+
+    if not inlier_faces:
+        inlier_faces = list(mesh.faces)
+        outlier_faces_removed = 0
+
+    adjacency: Dict[int, set[int]] = {}
+    for face_index, face in enumerate(inlier_faces):
+        for vertex_index in face:
+            adjacency.setdefault(vertex_index, set()).add(face_index)
+
+    face_neighbors: List[set[int]] = [set() for _ in inlier_faces]
+    for face_indices in adjacency.values():
+        face_list = list(face_indices)
+        for left in face_list:
+            face_neighbors[left].update(face_list)
+
+    seen = set()
+    components: List[List[int]] = []
+    for start in range(len(inlier_faces)):
+        if start in seen:
+            continue
+        stack = [start]
+        seen.add(start)
+        component = []
+        while stack:
+            current = stack.pop()
+            component.append(current)
+            for neighbor in face_neighbors[current]:
+                if neighbor not in seen:
+                    seen.add(neighbor)
+                    stack.append(neighbor)
+        components.append(component)
+
+    min_component_faces = max(1, int(len(inlier_faces) * minimum_component_face_fraction))
+    keep_face_indices = set()
+    if components:
+        largest_size = max(len(component) for component in components)
+        threshold = min(min_component_faces, max(1, int(largest_size * 0.10)))
+        for component in components:
+            if len(component) >= threshold or len(component) == largest_size:
+                keep_face_indices.update(component)
+    else:
+        keep_face_indices.update(range(len(inlier_faces)))
+
+    kept_faces_original = [inlier_faces[index] for index in sorted(keep_face_indices)]
+    used_vertices = sorted({vertex_index for face in kept_faces_original for vertex_index in face})
+    remap = {old_index: new_index + 1 for new_index, old_index in enumerate(used_vertices)}
+    cleaned_vertices = [mesh.vertices[index - 1] for index in used_vertices]
+    cleaned_faces = [tuple(remap[index] for index in face) for face in kept_faces_original]
+    cleaned = MeshData(vertices=cleaned_vertices, faces=cleaned_faces)
+    return cleaned, {
+        "cleanup_enabled": True,
+        "removed_vertices": len(mesh.vertices) - len(cleaned_vertices),
+        "removed_faces": len(mesh.faces) - len(cleaned_faces),
+        "components_before": len(components),
+        "components_kept": sum(1 for component in components if any(index in keep_face_indices for index in component)),
+        "outlier_faces_removed": outlier_faces_removed,
+    }
+
+
 def normalize_mesh_to_bbox(mesh: MeshData, center: Sequence[float], size: Sequence[float]) -> MeshData:
     source_min, source_max = mesh_bounds(mesh)
     source_size = [source_max[i] - source_min[i] for i in range(3)]
@@ -166,29 +293,72 @@ def normalize_mesh_to_bbox(mesh: MeshData, center: Sequence[float], size: Sequen
     return MeshData(vertices=normalized_vertices, faces=list(mesh.faces))
 
 
+def hunyuan_y_up_to_layout_z_up(mesh: MeshData) -> MeshData:
+    """Convert Hunyuan/model-viewer y-up mesh axes into BuildingBlock z-up axes.
+
+    Hunyuan3D/GLB-style meshes use the second coordinate as vertical. The
+    BuildingBlock layout contract uses z as vertical.  If we normalize raw
+    Hunyuan vertices axis-by-axis without this conversion, tall doors/windows
+    get squeezed into layout Y/depth and appear laid over or inverted in the
+    assembled building.
+    """
+    converted_vertices = []
+    for x, y, z in mesh.vertices:
+        converted_vertices.append((float(x), -float(z), float(y)))
+    return MeshData(vertices=converted_vertices, faces=list(mesh.faces))
+
+
 def normalize_mesh_file_to_bbox(
     source_path: Union[str, Path],
     output_path: Union[str, Path],
     contract_part: Mapping[str, object],
+    *,
+    cleanup: bool = False,
 ) -> str:
     if Path(source_path).suffix.lower() != ".obj":
         raise ValueError("minimal V1 normalization supports OBJ meshes only: {}".format(source_path))
     center, size = bbox_center_size(contract_part)
-    normalized = normalize_mesh_to_bbox(read_obj_mesh(source_path), center, size)
+    mesh = hunyuan_y_up_to_layout_z_up(read_obj_mesh(source_path))
+    normalized = normalize_mesh_to_bbox(mesh, center, size)
+    cleanup_info = None
+    if cleanup:
+        cleaned, cleanup_info = cleanup_mesh_to_bbox(normalized, center, size)
+        normalized = normalize_mesh_to_bbox(cleaned, center, size)
+        info_path = Path(output_path).with_suffix(".cleanup.json")
+        info_path.parent.mkdir(parents=True, exist_ok=True)
+        import json
+
+        info_path.write_text(json.dumps(cleanup_info, indent=2, sort_keys=True) + "\n")
     return write_obj_mesh(
         normalized,
         output_path,
-        header="normalized part_id={}".format(contract_part.get("part_id")),
+        header="normalized part_id={} cleanup={}".format(contract_part.get("part_id"), bool(cleanup_info)),
     )
 
 
-def write_placeholder_mesh(contract_part: Mapping[str, object], output_path: Union[str, Path]) -> str:
+def write_placeholder_mesh(
+    contract_part: Mapping[str, object],
+    output_path: Union[str, Path],
+    *,
+    shrink_wall: bool = False,
+    wall_xy_scale: float = 0.92,
+    wall_z_scale: float = 0.94,
+) -> str:
     center, size = bbox_center_size(contract_part)
+    if shrink_wall and str(contract_part.get("target_class", "")).startswith("wall"):
+        size = shrink_wall_placeholder_size(
+            size,
+            xy_scale=wall_xy_scale,
+            z_scale=wall_z_scale,
+        )
     mesh = create_box_mesh(center, size)
     return write_obj_mesh(
         mesh,
         output_path,
-        header="placeholder part_id={}".format(contract_part.get("part_id")),
+        header="placeholder part_id={} shrink_wall={}".format(
+            contract_part.get("part_id"),
+            bool(shrink_wall),
+        ),
     )
 
 
